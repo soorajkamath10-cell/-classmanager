@@ -1,0 +1,38 @@
+import { redirect } from 'next/navigation'
+import { createClient } from '@/lib/supabase/server'
+import { Sidebar } from '@/components/dashboard/sidebar'
+import { Header } from '@/components/dashboard/header'
+import type { Teacher } from '@/types/database'
+
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) redirect('/login')
+
+  const { data: teacher } = await supabase
+    .from('teachers')
+    .select('*')
+    .eq('id', user.id)
+    .single()
+
+  if (!teacher) redirect('/profile/setup')
+
+  return (
+    <div className="flex h-screen overflow-hidden">
+      <Sidebar />
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <Header teacher={teacher as Teacher} />
+        <main className="flex-1 overflow-y-auto p-6 bg-background">
+          {children}
+        </main>
+      </div>
+    </div>
+  )
+}
